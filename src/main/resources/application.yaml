@@ -1,0 +1,48 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:unavailableSubscribers
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+  h2:
+    console:
+      enabled: true
+  cache:
+    cache-names:
+      - unavailable-subscribers
+    caffeine:
+      spec: maximumSize=600,expireAfterAccess=1s
+
+bucket4j:
+  enabled: true
+  filters:
+    - cache-name: unavailable-subscribers
+      url: /unavailableSunscriber
+      rate-limits:
+        - bandwidths:
+            - capacity: 500
+              time: 1
+              unit: seconds
+
+scheduler:
+  ping:
+    minutes: 1
+    requestUrl: 'localhost:8090/ping'
+  message-sender:
+    max-message-count: 300
+    cron: '* * 9-22 * * *'
+    requestUrl: 'localhost:8090/sendSms'
+    messageTemplate: 'Абонент в сети с %s. Вы можете перезвонить ему.'
+  purge:
+    time-to-live-days: 3
+    cron: '0 0 */1 * * *'
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 1000
+        readTimeout: 1000
+        loggerLevel: basic
